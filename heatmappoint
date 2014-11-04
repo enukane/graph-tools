@@ -1,0 +1,97 @@
+#!/usr/bin/ruby
+
+require "erb"
+require "optparse"
+require "fileutils"
+
+class HeatmapPoint
+  OUTPUTDIR="output"
+  OUTPUT="output.html"
+  TEMPLATEPATH="template/heatmappoint.html.erb"
+  OPTS = {}
+
+  def initialize args
+    @imagepath = ""
+    @outputdir = ""
+    @output = ""
+    @force = false
+
+    parse_args(args)
+  end
+
+  def parse_args(args)
+    opt = OptionParser.new
+    opt.on("-i VAL") {|v| OPTS[:image] = v } # image
+    opt.on("-n VAL") {|v| OPTS[:output] = v } # output
+    opt.on("-o VAL") {|v| OPTS[:outputdir] = v } #outputdir
+    opt.on("-f")     {|v| OPTS[:force] = true } # force
+    opt.on("-h")     {|v| usage}
+
+    opt.parse!(args)
+
+    @image = OPTS[:image]
+    @image_rel = File.basename(@image)
+    @outputdir = OPTS[:outputdir] || OUTPUTDIR
+    @output = OPTS[:output] || OUTPUT
+    @force = OPTS[:force] || false
+
+    validate_args
+  end
+
+  def usage
+    print "usage: heatmappoint [-f] [-o outputdir] [-n output.html] -i imagepath\n"
+    print "\t-f : force overwrite on directory\n"
+    print "\t-o : output directory\n"
+    print "\t-n : output html file name\n"
+    print "\t-i : image to use\n"
+    exit 1
+  end
+
+  def validate_args
+    unless @image
+      print "ERROR: image (#{@image}) is invalid\n"
+      usage
+      exit 1
+    end
+  end
+
+  def prepare_outputdir
+    if File.exists?(@outputdir)
+      if @force
+        print "FORCE: path(#{@outputdir} already exists but overwrite\n"
+      else
+        print "ERROR: path (#{@outputdir}) already exists\n"
+        exit 1
+      end
+    else
+      Dir.mkdir(@outputdir)
+    end
+  end
+
+  def output_html
+    template_str = nil
+    path = "#{@outputdir}/#{@output}"
+    File.open(TEMPLATEPATH) do |file|
+      template_str = file.read
+    end
+
+    erb = ERB.new(template_str)
+
+    File.open(path, "w") do |file|
+      file.write(erb.result(binding))
+    end
+  end
+
+  def prepare_accessories
+    # copy image
+    FileUtils.copy(@image, "#{@outputdir}/")
+  end
+
+  def output
+    prepare_outputdir
+    output_html
+    prepare_accessories
+  end
+end
+
+HeatmapPoint.new(ARGV).output

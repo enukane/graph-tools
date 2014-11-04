@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Point Checker</title>
+    <style>
+      body, html { margin:0; padding:0; height:100%;}
+      body { font-family:sans-serif; }
+      body * { font-weight:200;}
+      #heatmapContainerWrapper { width:100%; height:100%; position:absolute; }
+      #heatmapContainer { width:100%; height:100%;}
+      #heatmapLegend { background:white; position:absolute; bottom:0; right:0; padding:10px; }
+      h1 { position:absolute; left:0; top:0; background:white; padding:10px;}
+    </style>
+    <script>
+      function record(event) {
+        var pos = document.getElementById("pos");
+        var x = event.pageX;
+        var y = event.pageY;
+        console.log("x=" + x + ", y= " + y );
+
+        pos.value += x + "," + y + ",\n";
+      }
+
+      function reset(event) {
+        var pos = document.getElementById("pos");
+        console.log("reset");
+        pos.value = "";
+      }
+    </script>
+  </head>
+  <body>
+    <div id="heatmapContainerWrapper">
+      <div id="heatmapContainer">
+        <img src="<%= @image_rel %>" onclick="record(event)"></img>
+      </div>
+      <div id="heatmapLegend">
+        <textarea id="pos" cols=20 rows=30></textarea><br />
+        <button type="button" id="reset" onclick="reset()">Reset</button>
+      </div>
+    </div>
+  </body>
+</html>
