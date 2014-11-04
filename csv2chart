@@ -21,15 +21,27 @@ class CSV2Chart
 					includeZero: false,
 					},
 					data : [
-					<% @data.each do |name, vals| %>
+					<% @data.each_with_index do |elm, idx| %>
+					<% next if @first and idx == 0 %>
+					<% name = elm[0] %>
+					<% vals = elm[1] %>
 					{
 						type: "line",
 						showInLegend: true,
 						name: "<%= name %>",
 						legendText: "<%= name %>",
+						<% if @unix %>
+						<% p "unix is on" %>
+						xValueType: "dateTime",
+						<% end %>
 						dataPoints: [
-						<% vals.each do |val| %>
-							{ y: <%= val %> },
+						<% vals.each_with_index do |val, jdx| %>
+							{ 
+								<% if @unix %>
+								x: <%= @data[0.to_s][jdx].to_i * 1000 %>,
+								<% end %>
+								y: <%= val %>
+							},
 						<% end %>
 						]
 					},
@@ -76,6 +88,7 @@ TEMPLATE_END
     opt.on("-c VAL") {|v| OPTS[:columnnames] = v} # multicolumn name
     opt.on("-n VAL") {|v| OPTS[:output] = v }
     opt.on("-F")     {|v| OPTS[:first] = true }
+    opt.on("-U")     {|v| OPTS[:unix] = true }
     opt.on("-f")     {|v| OPTS[:force] = true }
     opt.on("-h")     {|v| usage }
 
@@ -87,6 +100,7 @@ TEMPLATE_END
     @columnnames = OPTS[:columnnames] || ""
     @output = OPTS[:output] || OUTPUT
     @first = OPTS[:first] || false
+    @unix = OPTS[:unix] || false
     @force = OPTS[:force] || false
     @flist = args
 
@@ -189,7 +203,6 @@ TEMPLATE_END
         line.strip!
         elms = line.gsub(",", " ").split
         elms.each_with_index do |elm, idx|
-          next if @first and idx == 0
           arrays[idx] = [] if arrays[idx] == nil
           arrays[idx] << elm
         end
@@ -201,7 +214,6 @@ TEMPLATE_END
   def regulate_multicolumn_table table
     columnarray = @columnnames.strip.split(",")
     table.each_with_index do |array, idx|
-      next if @first and idx == 0
       name = columnarray[idx] || idx.to_s
       @data[name] = array
     end
