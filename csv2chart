@@ -31,14 +31,14 @@ class CSV2Chart
 						name: "<%= name %>",
 						legendText: "<%= name %>",
 						<% if @unix %>
-						<% p "unix is on" %>
 						xValueType: "dateTime",
 						<% end %>
 						dataPoints: [
 						<% vals.each_with_index do |val, jdx| %>
 							{ 
 								<% if @unix %>
-								x: <%= @data[0.to_s][jdx].to_i * 1000 %>,
+									<% xname = @columnnamesary[0] || 0.to_s %>
+								x: <%= @data[xname][jdx].to_i * 1000 %>,
 								<% end %>
 								y: <%= val %>
 							},
@@ -212,9 +212,9 @@ TEMPLATE_END
   end
 
   def regulate_multicolumn_table table
-    columnarray = @columnnames.strip.split(",")
+    @columnnamesary = @columnnames.strip.split(",")
     table.each_with_index do |array, idx|
-      name = columnarray[idx] || idx.to_s
+      name = @columnnamesary[idx] || idx.to_s
       @data[name] = array
     end
   end
