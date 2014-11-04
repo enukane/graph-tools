@@ -1,0 +1,215 @@
+#!/usr/bin/ruby
+require "erb"
+require "optparse"
+require "fileutils"
+
+class CSV2Chart
+  TEMPLATE_STR= <<"TEMPLATE_END"
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<script type="text/javascript">
+			window.onload = function() {
+				var chart = new CanvasJS.Chart("chartContainer",
+				{
+					zoomEnabled: true,
+					panEnabled: true,
+					title : {
+						text: "<%= @title_text %>"
+					},
+					axisY: {
+					includeZero: false,
+					},
+					data : [
+					<% @data.each do |name, vals| %>
+					{
+						type: "line",
+						showInLegend: true,
+						name: "<%= name %>",
+						legendText: "<%= name %>",
+						dataPoints: [
+						<% vals.each do |val| %>
+							{ y: <%= val %> },
+						<% end %>
+						]
+					},
+					<% end %>
+					]
+				});
+
+				chart.render();
+			}
+		</script>
+		<script type="text/javascript", src="canvasjs.min.js"></script>
+	</head>
+	<body>
+		<div id="chartContainer">
+		</div>
+	</body>
+</html>
+TEMPLATE_END
+
+  TITLETEXT="TITLE"
+  OUTPUTDIR="output"
+  OUTPUT="output.html"
+  VENDORJS="vendor/canvasjs.min.js"
+  OPTS = {}
+
+  def initialize args
+    @flist = []
+    @names = {}
+    @data = {}
+    @title_text = ""
+    @multicolumn = ""
+    @columnnames = ""
+
+    parse_args(args)
+  end
+
+  def parse_args args
+    # @flist, @title_text
+    opt = OptionParser.new
+
+    opt.on("-t VAL") {|v| OPTS[:title] = v } # title
+    opt.on("-o VAL") {|v| OPTS[:outputdir] = v } # output
+    opt.on("-m VAL") {|v| OPTS[:multicolumn] = v } # multicolumn file
+    opt.on("-c VAL") {|v| OPTS[:columnnames] = v} # multicolumn name
+    opt.on("-n VAL") {|v| OPTS[:output] = v }
+    opt.on("-f")     {|v| OPTS[:force] = true }
+    opt.on("-h")     {|v| usage }
+
+    opt.parse!(args)
+
+    @title_text = OPTS[:title] || ""
+    @outputdir = OPTS[:outputdir] || OUTPUTDIR
+    @multicolumn = OPTS[:multicolumn] || nil
+    @columnnames = OPTS[:columnnames] || ""
+    @output = OPTS[:output] || OUTPUT
+    @force = OPTS[:force] || false
+    @flist = args
+
+    # verbose check
+    if @multicolumn && @flist.length != 0
+      print "Multicolumn file is specified. Rest file would be ignored (@flist)\n"
+    end
+  end
+
+  def usage
+    print "This command parses single & multicolumn csv file and draw chart in html\n"
+    print "Can accept multi single column csv file or multicolumn file by '-m'\n"
+    print "With multicolumn file, '-c' with comma-separated column name can be used\n"
+    print "\n"
+    print "usage: csv2chart [-f] [-t title] [-o outputdir] [-n output] csvfile csvfile1 csvfile2 ...\n"
+    print "       csv2chart -h\n"
+    print "       csv2chart [-f] [-t title] [-o outputdir] [-n output] [-c column0,column1] -m multicolumncsvfile\n"
+    exit
+  end
+
+  def examine_file fname
+    raise "Requires valid path #{fname}" unless File.exists?(fname)
+    raise "Requires normal file" unless File.ftype(fname) == "file"
+    return true
+  end
+
+  def examine_flist
+    usage if @flist.length == 0
+    @flist.each do |fname|
+      examine_file fname
+      legend = fname.split(".")[0]
+      @names[fname] = File.basename(legend)
+    end
+    return @flist
+  end
+
+  def parse_file fname
+    array = []
+    File.open(fname) do |file|
+      while line = file.gets
+        line.strip!
+        elms = line.gsub(",", " ").split
+        val = elms[0]
+        array << val
+      end
+    end
+
+    return array
+  end
+
+  def parse_flist
+    @names.each do |fname, legend|
+      array = parse_file fname
+      @data[legend] = array
+    end
+  end
+
+  def output_html
+    if File.exists?(@outputdir)
+      if @force
+        print "FORCE: path (#{@outputdir}) already exists but overwrite\n"
+      else
+        print "ERROR: path (#{@outputdir}) already exists\n"
+        exit 1
+      end
+    else
+      Dir.mkdir(@outputdir)
+    end
+
+    erb = ERB.new(TEMPLATE_STR)
+    path = "#{@outputdir}/#{@output}"
+    File.open(path, "w") do |file|
+      file.write(erb.result(binding))
+    end
+    print "File outputed to '#{path}'\n"
+
+    if FileUtils.copy(VENDORJS, "#{@outputdir}/")
+      print "Vendor JS file (#{VENDORJS}) copied to '#{@outputdir}/'\n"
+    end
+  end
+
+  def output
+    if @multicolumn
+      output_multicolumn
+      return
+    end
+    examine_flist
+    parse_flist
+    output_html
+  end
+
+  def examine_multicolumn_file
+    return examine_file @multicolumn
+  end
+
+  def parse_multicolumn_file fname
+    arrays = []
+    File.open(fname) do |file|
+      while line = file.gets
+        line.strip!
+        elms = line.gsub(",", " ").split
+        elms.each_with_index do |elm, idx|
+          arrays[idx] = [] if arrays[idx] == nil
+          arrays[idx] << elm
+        end
+      end
+    end
+    return arrays
+  end
+
+  def regulate_multicolumn_table table
+    columnarray = @columnnames.strip.split(",")
+    table.each_with_index do |array, idx|
+      name = columnarray[idx] || ""
+      @data[name] = array
+    end
+  end
+
+  def output_multicolumn
+    examine_multicolumn_file
+    parse_multicolumn_file @multicolumn
+    @multicolumn_table = parse_multicolumn_file @multicolumn
+    regulate_multicolumn_table @multicolumn_table
+    output_html
+  end
+end
+
+CSV2Chart.new(ARGV).output
