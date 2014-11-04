@@ -198,7 +198,7 @@ TEMPLATE_END
   def regulate_multicolumn_table table
     columnarray = @columnnames.strip.split(",")
     table.each_with_index do |array, idx|
-      name = columnarray[idx] || ""
+      name = columnarray[idx] || idx.to_s
       @data[name] = array
     end
   end
