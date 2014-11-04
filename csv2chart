@@ -36,9 +36,11 @@ class CSV2Chart
 						dataPoints: [
 						<% vals.each_with_index do |val, jdx| %>
 							{ 
+								<% xname = @columnnamesary[0] || 0.to_s %>
 								<% if @unix %>
-									<% xname = @columnnamesary[0] || 0.to_s %>
 								x: <%= @data[xname][jdx].to_i * 1000 %>,
+								<% elsif @sync %>
+								x: <%= @data[xname][jdx].to_i %>,
 								<% end %>
 								y: <%= val %>
 							},
@@ -90,6 +92,7 @@ TEMPLATE_END
     opt.on("-F")     {|v| OPTS[:first] = true }
     opt.on("-U")     {|v| OPTS[:unix] = true }
     opt.on("-f")     {|v| OPTS[:force] = true }
+    opt.on("-s")     {|v| OPTS[:sync] = true }
     opt.on("-h")     {|v| usage }
 
     opt.parse!(args)
@@ -102,6 +105,7 @@ TEMPLATE_END
     @first = OPTS[:first] || false
     @unix = OPTS[:unix] || false
     @force = OPTS[:force] || false
+    @sync = OPTS[:sync] || false
     @flist = args
 
     # verbose check
