@@ -75,6 +75,7 @@ TEMPLATE_END
     opt.on("-m VAL") {|v| OPTS[:multicolumn] = v } # multicolumn file
     opt.on("-c VAL") {|v| OPTS[:columnnames] = v} # multicolumn name
     opt.on("-n VAL") {|v| OPTS[:output] = v }
+    opt.on("-F")     {|v| OPTS[:first] = true }
     opt.on("-f")     {|v| OPTS[:force] = true }
     opt.on("-h")     {|v| usage }
 
@@ -85,6 +86,7 @@ TEMPLATE_END
     @multicolumn = OPTS[:multicolumn] || nil
     @columnnames = OPTS[:columnnames] || ""
     @output = OPTS[:output] || OUTPUT
+    @first = OPTS[:first] || false
     @force = OPTS[:force] || false
     @flist = args
 
@@ -187,6 +189,7 @@ TEMPLATE_END
         line.strip!
         elms = line.gsub(",", " ").split
         elms.each_with_index do |elm, idx|
+          next if @first and idx == 0
           arrays[idx] = [] if arrays[idx] == nil
           arrays[idx] << elm
         end
@@ -198,6 +201,7 @@ TEMPLATE_END
   def regulate_multicolumn_table table
     columnarray = @columnnames.strip.split(",")
     table.each_with_index do |array, idx|
+      next if @first and idx == 0
       name = columnarray[idx] || idx.to_s
       @data[name] = array
     end
