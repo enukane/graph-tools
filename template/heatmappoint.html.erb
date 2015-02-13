@@ -19,7 +19,7 @@
         var y = event.pageY;
         console.log("x=" + x + ", y= " + y );
 
-        pos.value += x + "," + y + ",\n";
+        pos.value += "," + x + "," + y + "\n";
       }
 
       function reset(event) {
@@ -38,6 +38,7 @@
         <textarea id="pos" cols=20 rows=30></textarea><br />
         <button type="button" id="reset" onclick="reset()">Reset</button>
       </div>
+      <p>Enter name of the point before you click on the map</p>
     </div>
   </body>
 </html>
