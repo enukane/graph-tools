@@ -87,7 +87,7 @@ This file has unix epoch timestamps on its first column, so if you use
 
 then, csv2chart automatically converts it with exact string format
 
-![3cols_timestamp_data][testdata/graph_3cols_timestamp_data.png)
+![3cols_timestamp_data](testdata/graph_3cols_timestamp_data.png)
 
 # heatmappoint
 
