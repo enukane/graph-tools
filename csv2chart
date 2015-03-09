@@ -4,6 +4,13 @@ require "optparse"
 require "fileutils"
 
 class CSV2Chart
+  #
+  # @data = {
+  #   "series_name0" => [ value0_0, value0_1, value0_2, ... ],
+  #   "series_name1" => [ value1_0, value1_0, value1_2, ... ],
+  #   ...
+  # ]
+  #
   TEMPLATE_STR= <<"TEMPLATE_END"
 <!DOCTYPE HTML>
 <html>
@@ -39,7 +46,7 @@ class CSV2Chart
 								<% xname = @columnnamesary[0] || 0.to_s %>
 								<% if @unix %>
 								x: <%= @data[xname][jdx].to_i * 1000 %>,
-								<% elsif @sync %>
+								<% elsif @int %>
 								x: <%= @data[xname][jdx].to_i %>,
 								<% end %>
 								y: <%= val %>
@@ -92,7 +99,7 @@ TEMPLATE_END
     opt.on("-F")     {|v| OPTS[:first] = true }
     opt.on("-U")     {|v| OPTS[:unix] = true }
     opt.on("-f")     {|v| OPTS[:force] = true }
-    opt.on("-s")     {|v| OPTS[:sync] = true }
+    opt.on("-i")     {|v| OPTS[:int] = true }
     opt.on("-h")     {|v| usage }
 
     opt.parse!(args)
@@ -105,7 +112,7 @@ TEMPLATE_END
     @first = OPTS[:first] || false
     @unix = OPTS[:unix] || false
     @force = OPTS[:force] || false
-    @sync = OPTS[:sync] || false
+    @int = OPTS[:int] || false
     @flist = args
 
     # verbose check
@@ -119,9 +126,29 @@ TEMPLATE_END
     print "Can accept multi single column csv file or multicolumn file by '-m'\n"
     print "With multicolumn file, '-c' with comma-separated column name can be used\n"
     print "\n"
-    print "usage: csv2chart [-f] [-t title] [-o outputdir] [-n output] csvfile csvfile1 csvfile2 ...\n"
-    print "       csv2chart -h\n"
-    print "       csv2chart [-f] [-t title] [-o outputdir] [-n output] [-c column0,column1] -m multicolumncsvfile\n"
+    print "Usage: csv2chart [-fFhsU] [-t title] [-o outputdir] [-n outputfile] [-c column0,column1...] [-m mcsvfile] csvfile csvfile1 csvfile2 ...\n"
+    print "   -f              force overwrite outputdir and outputfile\n"
+    print "   -F              ignore first column\n"
+    print "   -h              show this help\n"
+    print "   -U              translate first column from Unix epoch to local time string\n"
+    print "   -i              translate first column from string to integer\n"
+    print "   -t <title>      set TITLE to <title>\n"
+    print "   -o <dir>        use specified directory for output (creates if not exists)\n"
+    print "   -n <name>       use specified name to output html (default: output.html)\n"
+    print "   -m <csvfile>    specify source multi-column csv file\n"
+    print "   -c <columns>    comma-separated name for each series in multi-column csv (used with -m)\n"
+    print "   <args>          multiple csv files to combine (exclusive with -m)\n"
+    print "\n"
+    print "Typical Usage:\n"
+    print ">> Plot simple csv file (contains timestamp and data)\n"
+    print "   % csv2chart -U -t \"THIS IS IT\" -o myoutput -n myoutput0.html -m myoutput0.csv -c Time,Value\n"
+    print "\n"
+    print ">> Plot multi-column csv file\n"
+    print "   % csv2chart -U -t \"THIS IS IT\" -o myoutput -n myoutput0.html -m myoutput0.csv -c Time,Height,Width\n"
+    print "\n"
+    print ">> Combine and plot multiple csv file\n"
+    print "   % csv2chart -t \"THIS IS IT\" -o myoutput -n myoutput0.html data0.csv data1.csv data2.csv\n"
+    print "\n"
     exit
   end
 
