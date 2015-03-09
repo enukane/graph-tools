@@ -28,20 +28,21 @@ class CSV2Chart
 					includeZero: false,
 					},
 					data : [
-					<% @data.each_with_index do |elm, idx| %>
-					<% next if @first and idx == 0 %>
-					<% name = elm[0] %>
-					<% vals = elm[1] %>
+					<% @data.each_with_index do |pair, series_idx| %>
+					<% next if @first and series_idx == 0 %>
+					<% next if @unix and series_idx == 0 %>
+					<% series_name = pair[0] %>
+					<% series_vals = pair[1] %>
 					{
 						type: "line",
 						showInLegend: true,
-						name: "<%= name %>",
-						legendText: "<%= name %>",
+						name: "<%= series_name %>",
+						legendText: "<%= series_name %>",
 						<% if @unix %>
 						xValueType: "dateTime",
 						<% end %>
 						dataPoints: [
-						<% vals.each_with_index do |val, jdx| %>
+						<% series_vals.each_with_index do |val, jdx| %>
 							{ 
 								<% xname = @columnnamesary[0] || 0.to_s %>
 								<% if @unix %>
